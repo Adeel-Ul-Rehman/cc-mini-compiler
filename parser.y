@@ -66,7 +66,6 @@ const char* get_factor_type(ASTNode *node) {
 %type <node> stmt stmt_list
 %type <node> assign_stmt if_stmt while_stmt for_stmt return_stmt input_stmt output_stmt
 %type <node> expr logical_or logical_and equality relational additive multiplicative factor
-%type <sval> literal_type
 
 %start program
 
