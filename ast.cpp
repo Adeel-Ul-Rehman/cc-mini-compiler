@@ -203,6 +203,7 @@ void ast_print(ASTNode *node, int indent) {
         case NODE_STRING_LIT: printf("String: %s\n", node->data.sval); break;
         case NODE_VAR: printf("Var: %s\n", node->data.sval); break;
         case NODE_TYPE: printf("Type: %s\n", node->data.sval); break;
+        default: break;
     }
 }
 

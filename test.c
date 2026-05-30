@@ -1,1 +1,4 @@
-int x; int main() { int a; a=10; output(a); return 0; }
+#include <stdio.h>
+void output(int a) {
+    printf("The value of a is: %d\n", a);
+}

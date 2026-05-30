@@ -28,12 +28,19 @@ ASTNode *program_root;
 %token <sval> IDENTIFIER STRING_LIT
 
 %type <node> program declaration_list declaration function_list function
-%type <node> parameters parameter_list statement_list statement
+%type <node> param_list statement_list statement
 %type <node> assignment_stmt if_stmt while_stmt for_stmt return_stmt input_stmt output_stmt
 %type <node> block expression logical_or logical_and equality relational additive multiplicative
 %type <node> factor type_spec
 
 %start program
+
+%left OR
+%left AND
+%left EQ NE
+%left LT GT LE GE
+%left PLUS MINUS
+%left STAR SLASH
 
 %%
 
@@ -57,17 +64,17 @@ function_list:
     ;
 
 function:
-    type_spec IDENTIFIER LPAREN parameters RPAREN block { $$ = ast_function($1, $2, $4, $6); }
+    type_spec IDENTIFIER LPAREN RPAREN block
+        { $$ = ast_function($1, $2, NULL, $5); }
+    | type_spec IDENTIFIER LPAREN param_list RPAREN block
+        { $$ = ast_function($1, $2, $4, $6); }
     ;
 
-parameters:
-    /* empty */            { $$ = NULL; }
-    | parameter_list       { $$ = $1; }
-    ;
-
-parameter_list:
-    type_spec IDENTIFIER                { $$ = ast_param_list(NULL, $1, $2); }
-    | parameter_list COMMA type_spec IDENTIFIER { $$ = ast_param_list($1, $3, $4); }
+param_list:
+    type_spec IDENTIFIER
+        { $$ = ast_param_list(NULL, $1, $2); }
+    | param_list COMMA type_spec IDENTIFIER
+        { $$ = ast_param_list($1, $3, $4); }
     ;
 
 block:
@@ -104,7 +111,8 @@ while_stmt:
     ;
 
 for_stmt:
-    FOR LPAREN assignment_stmt SEMICOLON expression SEMICOLON assignment_stmt RPAREN statement { $$ = ast_for($3, $5, $7, $9); }
+    FOR LPAREN assignment_stmt SEMICOLON expression SEMICOLON assignment_stmt RPAREN statement
+        { $$ = ast_for($3, $5, $7, $9); }
     ;
 
 return_stmt:
