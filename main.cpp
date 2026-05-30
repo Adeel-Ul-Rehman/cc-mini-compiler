@@ -3,6 +3,7 @@
 #include "ast.h"
 #include "symbol_table.h"
 #include "tac.h"
+#include "interpreter.h"
 
 extern FILE *yyin;
 extern int yyparse();
@@ -30,9 +31,13 @@ int main(int argc, char **argv) {
         ast_print(program_root, 0);
         print_symbol_table(symtab);
         
-        // Generate and print TAC
+        // Generate TAC
         TacProgram *tac = tac_generate(program_root);
         tac_print(tac);
+        
+        // Execute TAC (Interpreter)
+        interpreter_execute(tac);
+        
         tac_free(tac);
     } else if (semantic_errors > 0) {
         printf("Parsing failed due to semantic errors.\n");

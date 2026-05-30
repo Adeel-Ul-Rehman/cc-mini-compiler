@@ -43,52 +43,28 @@ void tac_print(TacProgram *prog) {
     TacInstr *instr = prog->head;
     
     while (instr) {
-        switch (instr->op) {
-            case TAC_LABEL:
-                printf("%s:\n", instr->result);
-                break;
-            case TAC_GOTO:
-                printf("goto %s\n", instr->result);
-                break;
-            case TAC_IFGOTO:
-                printf("if %s != 0 goto %s\n", instr->result, instr->arg1);
-                break;
-            case TAC_INPUT:
-                printf("input %s\n", instr->result);
-                break;
-            case TAC_OUTPUT:
-                printf("output %s\n", instr->result);
-                break;
-            case TAC_RETURN:
-                printf("return %s\n", instr->result ? instr->result : "");
-                break;
-            case TAC_ASSIGN:
-                if (instr->arg2) {
-                    printf("%s = %s %s %s\n", instr->result, instr->arg1, 
-                           instr->op == TAC_ADD ? "+" : (instr->op == TAC_SUB ? "-" : 
-                           (instr->op == TAC_MUL ? "*" : "/")), instr->arg2);
-                } else {
-                    printf("%s = %s\n", instr->result, instr->arg1);
-                }
-                break;
-            case TAC_ADD:
-            case TAC_SUB:
-            case TAC_MUL:
-            case TAC_DIV:
-                {
-                    const char *op_str = "";
-                    switch (instr->op) {
-                        case TAC_ADD: op_str = "+"; break;
-                        case TAC_SUB: op_str = "-"; break;
-                        case TAC_MUL: op_str = "*"; break;
-                        case TAC_DIV: op_str = "/"; break;
-                        default: break;
-                    }
-                    printf("%s = %s %s %s\n", instr->result, instr->arg1, op_str, instr->arg2);
-                }
-                break;
-            default:
-                break;
+        if (instr->op == TAC_LABEL) {
+            printf("%s:\n", instr->result);
+        } else if (instr->op == TAC_GOTO) {
+            printf("goto %s\n", instr->result);
+        } else if (instr->op == TAC_IFGOTO) {
+            printf("if %s goto %s\n", instr->result, instr->arg1);
+        } else if (instr->op == TAC_INPUT) {
+            printf("input %s\n", instr->result);
+        } else if (instr->op == TAC_OUTPUT) {
+            printf("output %s\n", instr->result);
+        } else if (instr->op == TAC_RETURN) {
+            printf("return %s\n", instr->result ? instr->result : "");
+        } else if (instr->op == TAC_ADD) {
+            printf("%s = %s + %s\n", instr->result, instr->arg1, instr->arg2);
+        } else if (instr->op == TAC_SUB) {
+            printf("%s = %s - %s\n", instr->result, instr->arg1, instr->arg2);
+        } else if (instr->op == TAC_MUL) {
+            printf("%s = %s * %s\n", instr->result, instr->arg1, instr->arg2);
+        } else if (instr->op == TAC_DIV) {
+            printf("%s = %s / %s\n", instr->result, instr->arg1, instr->arg2);
+        } else if (instr->op == TAC_ASSIGN) {
+            printf("%s = %s\n", instr->result, instr->arg1);
         }
         instr = instr->next;
     }
@@ -112,6 +88,7 @@ void tac_free(TacProgram *prog) {
 // Forward declarations
 static void tac_gen_stmt(TacProgram *prog, ASTNode *node);
 static void tac_gen_expr(TacProgram *prog, ASTNode *node, char **result);
+static TacProgram *return_instrs = NULL;
 
 static void tac_gen_assign(TacProgram *prog, ASTNode *node) {
     char *expr_result = NULL;
@@ -136,17 +113,13 @@ static void tac_gen_binary(TacProgram *prog, ASTNode *node, char **result) {
     
     char *temp = tac_new_temp(prog);
     TacOp op;
-    const char *op_str = node->data.binary.op;
     
-    if (strcmp(op_str, "+") == 0) op = TAC_ADD;
-    else if (strcmp(op_str, "-") == 0) op = TAC_SUB;
-    else if (strcmp(op_str, "*") == 0) op = TAC_MUL;
-    else if (strcmp(op_str, "/") == 0) op = TAC_DIV;
+    if (strcmp(node->data.binary.op, "+") == 0) op = TAC_ADD;
+    else if (strcmp(node->data.binary.op, "-") == 0) op = TAC_SUB;
+    else if (strcmp(node->data.binary.op, "*") == 0) op = TAC_MUL;
+    else if (strcmp(node->data.binary.op, "/") == 0) op = TAC_DIV;
     else {
-        op = TAC_ASSIGN;
-        tac_add_instr(prog, TAC_ASSIGN, temp, left_result, NULL);
-        *result = temp;
-        free(left_result);
+        *result = left_result;
         free(right_result);
         return;
     }
@@ -168,14 +141,12 @@ static void tac_gen_if(TacProgram *prog, ASTNode *node) {
     free(cond_result);
     
     tac_gen_stmt(prog, node->data.if_stmt.then_branch);
-    
     tac_add_instr(prog, TAC_GOTO, label_end, NULL, NULL);
-    tac_add_instr(prog, TAC_LABEL, label_else, NULL, NULL);
     
+    tac_add_instr(prog, TAC_LABEL, label_else, NULL, NULL);
     if (node->data.if_stmt.else_branch) {
         tac_gen_stmt(prog, node->data.if_stmt.else_branch);
     }
-    
     tac_add_instr(prog, TAC_LABEL, label_end, NULL, NULL);
     free(label_else);
     free(label_end);
@@ -189,12 +160,10 @@ static void tac_gen_while(TacProgram *prog, ASTNode *node) {
     
     char *cond_result = NULL;
     tac_gen_expr(prog, node->data.while_stmt.cond, &cond_result);
-    
     tac_add_instr(prog, TAC_IFGOTO, cond_result, label_end, NULL);
     free(cond_result);
     
     tac_gen_stmt(prog, node->data.while_stmt.body);
-    
     tac_add_instr(prog, TAC_GOTO, label_start, NULL, NULL);
     tac_add_instr(prog, TAC_LABEL, label_end, NULL, NULL);
     free(label_start);
@@ -216,7 +185,6 @@ static void tac_gen_for(TacProgram *prog, ASTNode *node) {
     
     tac_gen_stmt(prog, node->data.for_stmt.body);
     tac_gen_stmt(prog, node->data.for_stmt.inc);
-    
     tac_add_instr(prog, TAC_GOTO, label_start, NULL, NULL);
     tac_add_instr(prog, TAC_LABEL, label_end, NULL, NULL);
     free(label_start);
@@ -240,10 +208,12 @@ static void tac_gen_return(TacProgram *prog, ASTNode *node) {
     if (node->data.ret.expr) {
         char *expr_result = NULL;
         tac_gen_expr(prog, node->data.ret.expr, &expr_result);
-        tac_add_instr(prog, TAC_RETURN, expr_result, NULL, NULL);
-        if (expr_result) free(expr_result);
-    } else {
-        tac_add_instr(prog, TAC_RETURN, NULL, NULL, NULL);
+        if (expr_result) {
+            // Store return for later - will add at end
+            if (!return_instrs) return_instrs = tac_create();
+            tac_add_instr(return_instrs, TAC_RETURN, expr_result, NULL, NULL);
+            free(expr_result);
+        }
     }
 }
 
@@ -285,10 +255,25 @@ static void tac_gen_expr(TacProgram *prog, ASTNode *node, char **result) {
     }
 }
 
+static void tac_gen_block(TacProgram *prog, ASTNode *node) {
+    ASTNode *stmt = node->data.block.stmts;
+    while (stmt) {
+        if (stmt->type == NODE_STMT_LIST) {
+            tac_gen_stmt(prog, stmt->data.list.node);
+            stmt = stmt->data.list.next;
+        } else {
+            tac_gen_stmt(prog, stmt);
+            stmt = NULL;
+        }
+    }
+}
+
 static void tac_gen_stmt(TacProgram *prog, ASTNode *node) {
     if (!node) return;
     
     switch (node->type) {
+        case NODE_DECL:
+            break;
         case NODE_ASSIGN:
             tac_gen_assign(prog, node);
             break;
@@ -310,28 +295,16 @@ static void tac_gen_stmt(TacProgram *prog, ASTNode *node) {
         case NODE_OUTPUT:
             tac_gen_output(prog, node);
             break;
-        case NODE_BLOCK: {
-            ASTNode *stmt = node->data.block.stmts;
-            while (stmt) {
-                if (stmt->type == NODE_STMT_LIST) {
-                    tac_gen_stmt(prog, stmt->data.list.node);
-                    stmt = stmt->data.list.next;
-                } else {
-                    tac_gen_stmt(prog, stmt);
-                    stmt = NULL;
-                }
-            }
+        case NODE_BLOCK:
+            tac_gen_block(prog, node);
             break;
-        }
         case NODE_STMT_LIST:
             tac_gen_stmt(prog, node->data.list.node);
             tac_gen_stmt(prog, node->data.list.next);
             break;
-        case NODE_FUNC: {
-            // Generate code for function body
-            tac_gen_stmt(prog, node->data.func.body);
+        case NODE_FUNC:
+            tac_gen_block(prog, node->data.func.body);
             break;
-        }
         default:
             break;
     }
@@ -340,24 +313,32 @@ static void tac_gen_stmt(TacProgram *prog, ASTNode *node) {
 TacProgram* tac_generate(ASTNode *node) {
     if (!node) return NULL;
     
+    return_instrs = NULL;
     TacProgram *prog = tac_create();
     
     if (node->type == NODE_PROGRAM) {
-        // Handle program node
-        ASTNode *current = node->data.program.funcs;
-        while (current) {
-            if (current->type == NODE_FUNC_LIST) {
-                // Extract the actual function node
-                ASTNode *func = current->data.list.node;
-                tac_gen_stmt(prog, func);
-                current = current->data.list.next;
+        ASTNode *funcs = node->data.program.funcs;
+        while (funcs) {
+            if (funcs->type == NODE_FUNC_LIST) {
+                tac_gen_stmt(prog, funcs->data.list.node);
+                funcs = funcs->data.list.next;
             } else {
-                tac_gen_stmt(prog, current);
-                current = NULL;
+                tac_gen_stmt(prog, funcs);
+                funcs = NULL;
             }
         }
     } else {
         tac_gen_stmt(prog, node);
+    }
+    
+    // Append return instructions at the end
+    if (return_instrs) {
+        TacInstr *instr = return_instrs->head;
+        while (instr) {
+            tac_add_instr(prog, instr->op, instr->result, instr->arg1, instr->arg2);
+            instr = instr->next;
+        }
+        tac_free(return_instrs);
     }
     
     return prog;

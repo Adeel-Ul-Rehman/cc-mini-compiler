@@ -19,9 +19,22 @@ ASTNode* ast_program(ASTNode *decls, ASTNode *funcs) {
 
 ASTNode* ast_decl_list(ASTNode *next, ASTNode *node) {
     ASTNode *list = new_node(NODE_DECL_LIST);
-    list->data.list.next = next;
-    list->data.list.node = node;
-    return list;
+    // Store in correct order - next is previous list
+    if (next) {
+        // Find tail
+        ASTNode *tail = next;
+        while (tail->data.list.next) {
+            tail = tail->data.list.next;
+        }
+        tail->data.list.next = list;
+        list->data.list.node = node;
+        list->data.list.next = NULL;
+        return next;
+    } else {
+        list->data.list.node = node;
+        list->data.list.next = NULL;
+        return list;
+    }
 }
 
 ASTNode* ast_declaration(ASTNode *type, char *name, ASTNode *init) {
@@ -39,9 +52,20 @@ ASTNode* ast_declaration(ASTNode *type, char *name, ASTNode *init) {
 
 ASTNode* ast_func_list(ASTNode *next, ASTNode *node) {
     ASTNode *list = new_node(NODE_FUNC_LIST);
-    list->data.list.next = next;
-    list->data.list.node = node;
-    return list;
+    if (next) {
+        ASTNode *tail = next;
+        while (tail->data.list.next) {
+            tail = tail->data.list.next;
+        }
+        tail->data.list.next = list;
+        list->data.list.node = node;
+        list->data.list.next = NULL;
+        return next;
+    } else {
+        list->data.list.node = node;
+        list->data.list.next = NULL;
+        return list;
+    }
 }
 
 ASTNode* ast_function(ASTNode *ret_type, char *name, ASTNode *params, ASTNode *body) {
@@ -56,11 +80,22 @@ ASTNode* ast_function(ASTNode *ret_type, char *name, ASTNode *params, ASTNode *b
 
 ASTNode* ast_param_list(ASTNode *next, ASTNode *type, char *name) {
     ASTNode *node = new_node(NODE_PARAM_LIST);
-    node->data.param.next = next;
-    node->data.param.type = type;
-    node->data.param.name = strdup(name);
-    ast_set_type(node, ast_get_type(type));
-    return node;
+    if (next) {
+        ASTNode *tail = next;
+        while (tail->data.param.next) {
+            tail = tail->data.param.next;
+        }
+        tail->data.param.next = node;
+        node->data.param.type = type;
+        node->data.param.name = strdup(name);
+        node->data.param.next = NULL;
+        return next;
+    } else {
+        node->data.param.type = type;
+        node->data.param.name = strdup(name);
+        node->data.param.next = NULL;
+        return node;
+    }
 }
 
 ASTNode* ast_block(ASTNode *stmts) {
@@ -71,9 +106,21 @@ ASTNode* ast_block(ASTNode *stmts) {
 
 ASTNode* ast_stmt_list(ASTNode *next, ASTNode *node) {
     ASTNode *list = new_node(NODE_STMT_LIST);
-    list->data.list.next = next;
-    list->data.list.node = node;
-    return list;
+    // Maintain order: new node goes to the end
+    if (next) {
+        ASTNode *tail = next;
+        while (tail->data.list.next) {
+            tail = tail->data.list.next;
+        }
+        tail->data.list.next = list;
+        list->data.list.node = node;
+        list->data.list.next = NULL;
+        return next;
+    } else {
+        list->data.list.node = node;
+        list->data.list.next = NULL;
+        return list;
+    }
 }
 
 ASTNode* ast_assignment(char *name, ASTNode *expr) {
@@ -139,8 +186,7 @@ ASTNode* ast_binary(const char *op, ASTNode *left, ASTNode *right) {
     node->data.binary.right = right;
     const char *ltype = ast_get_type(left);
     const char *rtype = ast_get_type(right);
-    if (strcmp(ltype, "float") == 0 || strcmp(rtype, "float") == 0 ||
-        strcmp(ltype, "float") == 0 || strcmp(rtype, "float") == 0) {  // Fixed condition
+    if (strcmp(ltype, "float") == 0 || strcmp(rtype, "float") == 0) {
         ast_set_type(node, "float");
     } else {
         ast_set_type(node, "int");
@@ -151,42 +197,42 @@ ASTNode* ast_binary(const char *op, ASTNode *left, ASTNode *right) {
 ASTNode* ast_int_lit(int val) {
     ASTNode *node = new_node(NODE_INT_LIT);
     node->data.ival = val;
-    node->inferred_type = strdup("int");
+    ast_set_type(node, "int");
     return node;
 }
 
 ASTNode* ast_float_lit(float val) {
     ASTNode *node = new_node(NODE_FLOAT_LIT);
     node->data.fval = val;
-    node->inferred_type = strdup("float");
+    ast_set_type(node, "float");
     return node;
 }
 
 ASTNode* ast_bool_lit(int val) {
     ASTNode *node = new_node(NODE_BOOL_LIT);
     node->data.ival = val;
-    node->inferred_type = strdup("int");
+    ast_set_type(node, "int");
     return node;
 }
 
 ASTNode* ast_string_lit(char *val) {
     ASTNode *node = new_node(NODE_STRING_LIT);
     node->data.sval = strdup(val);
-    node->inferred_type = strdup("string");
+    ast_set_type(node, "string");
     return node;
 }
 
 ASTNode* ast_var(char *name) {
     ASTNode *node = new_node(NODE_VAR);
     node->data.sval = strdup(name);
-    node->inferred_type = strdup("unknown");
+    ast_set_type(node, "unknown");
     return node;
 }
 
 ASTNode* ast_type(char *name) {
     ASTNode *node = new_node(NODE_TYPE);
     node->data.sval = strdup(name);
-    node->inferred_type = strdup(name);
+    ast_set_type(node, name);
     return node;
 }
 
