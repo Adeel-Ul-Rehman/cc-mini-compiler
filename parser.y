@@ -4,6 +4,7 @@
 #include <cstring>
 #include "ast.h"
 #include "symbol_table.h"
+#include "error_handler.h"
 
 extern int yylex();
 extern int yylineno;
@@ -11,6 +12,7 @@ void yyerror(const char *s);
 
 ASTNode *program_root;
 extern SymbolTable *symtab;
+extern ErrorList *error_list;
 
 int semantic_errors = 0;
 
@@ -20,11 +22,10 @@ const char* get_type_name(ASTNode *type) {
 }
 
 void semantic_error(const char *msg) {
-    fprintf(stderr, "Semantic Error at line %d: %s\n", yylineno, msg);
+    error_list_add(error_list, yylineno, "%s", msg);
     semantic_errors = 1;
 }
 
-// Helper to get type from a factor node (literal or variable)
 const char* get_factor_type(ASTNode *node) {
     if (!node) return "unknown";
     switch (node->type) {
@@ -95,15 +96,19 @@ top:
 decl:
     type_spec IDENTIFIER SEMICOLON {
         if (lookup_symbol_current_scope(symtab, $2)) {
-            semantic_error("Variable already declared in this scope");
+            error_list_add(error_list, yylineno, "Variable '%s' already declared in this scope", $2);
         } else {
             insert_symbol(symtab, $2, $1);
         }
         $$ = ast_declaration($1, $2, NULL);
     }
+    | error SEMICOLON {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid declaration, skipping to next semicolon");
+        $$ = NULL;
+    }
     | type_spec IDENTIFIER ASSIGN expr SEMICOLON {
         const char *spec = get_type_name($1);
-        // For initialization, get type from expression
         const char *expr_type = "unknown";
         if ($4) {
             if ($4->type == NODE_FLOAT_LIT) expr_type = "float";
@@ -117,12 +122,10 @@ decl:
             else expr_type = ast_get_type($4);
         }
         if (strcmp(spec, expr_type) != 0) {
-            char buf[256];
-            snprintf(buf, sizeof(buf), "type mismatch in initialization of '%s' (%s vs %s)", $2, spec, expr_type);
-            semantic_error(buf);
+            error_list_add(error_list, yylineno, "Type mismatch in initialization of '%s' (%s vs %s)", $2, spec, expr_type);
         } else {
             if (lookup_symbol_current_scope(symtab, $2)) {
-                semantic_error("Variable already declared in this scope");
+                error_list_add(error_list, yylineno, "Variable '%s' already declared in this scope", $2);
             } else {
                 insert_symbol(symtab, $2, $1);
             }
@@ -134,11 +137,16 @@ decl:
 function:
     type_spec IDENTIFIER LPAREN param_opt RPAREN block {
         if (lookup_symbol_current_scope(symtab, $2)) {
-            semantic_error("Function already declared in this scope");
+            error_list_add(error_list, yylineno, "Function '%s' already declared", $2);
         } else {
             insert_symbol(symtab, $2, $1);
         }
         $$ = ast_function($1, $2, $4, $6);
+    }
+    | error RPAREN block {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid function declaration, skipping to closing parenthesis");
+        $$ = NULL;
     }
     ;
 
@@ -160,6 +168,11 @@ param_list:
 
 block:
     LBRACE { enter_scope(symtab); } block_item_list RBRACE { exit_scope(symtab); $$ = ast_block($3); }
+    | error RBRACE {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid block content, skipping to closing brace");
+        $$ = NULL;
+    }
     ;
 
 block_item_list:
@@ -186,15 +199,18 @@ stmt:
     | input_stmt SEMICOLON    { $$ = $1; }
     | output_stmt SEMICOLON   { $$ = $1; }
     | block                   { $$ = $1; }
+    | error SEMICOLON {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid statement, skipping to semicolon");
+        $$ = NULL;
+    }
     ;
 
 assign_stmt:
     IDENTIFIER ASSIGN expr {
         Symbol *sym = lookup_symbol(symtab, $1);
         if (!sym) {
-            char buf[256];
-            snprintf(buf, sizeof(buf), "variable '%s' not declared", $1);
-            semantic_error(buf);
+            error_list_add(error_list, yylineno, "Variable '%s' not declared", $1);
         } else {
             const char *var_type = get_type_name(sym->type);
             const char *expr_type = "unknown";
@@ -210,9 +226,7 @@ assign_stmt:
                 else expr_type = ast_get_type($3);
             }
             if (strcmp(var_type, expr_type) != 0) {
-                char buf[256];
-                snprintf(buf, sizeof(buf), "type mismatch assigning '%s' to '%s'", expr_type, var_type);
-                semantic_error(buf);
+                error_list_add(error_list, yylineno, "Type mismatch assigning '%s' to '%s'", expr_type, var_type);
             }
         }
         $$ = ast_assignment($1, $3);
@@ -222,35 +236,63 @@ assign_stmt:
 if_stmt:
     IF LPAREN expr RPAREN stmt ELSE stmt   { $$ = ast_if($3, $5, $7); }
     | IF LPAREN expr RPAREN stmt           { $$ = ast_if($3, $5, NULL); }
+    | IF error stmt ELSE stmt {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid if condition, skipping");
+        $$ = NULL;
+    }
     ;
 
 while_stmt:
     WHILE LPAREN expr RPAREN stmt   { $$ = ast_while($3, $5); }
+    | WHILE error stmt {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid while condition, skipping");
+        $$ = NULL;
+    }
     ;
 
 for_stmt:
     FOR LPAREN assign_stmt SEMICOLON expr SEMICOLON assign_stmt RPAREN stmt
         { $$ = ast_for($3, $5, $7, $9); }
+    | FOR error stmt {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid for loop declaration, skipping");
+        $$ = NULL;
+    }
     ;
 
 return_stmt:
     RETURN expr { $$ = ast_return($2); }
+    | RETURN error {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid return statement, skipping");
+        $$ = NULL;
+    }
     ;
 
 input_stmt:
     INPUT LPAREN IDENTIFIER RPAREN {
         Symbol *sym = lookup_symbol(symtab, $3);
         if (!sym) {
-            char buf[256];
-            snprintf(buf, sizeof(buf), "variable '%s' not declared", $3);
-            semantic_error(buf);
+            error_list_add(error_list, yylineno, "Variable '%s' not declared", $3);
         }
         $$ = ast_input($3);
+    }
+    | INPUT error RPAREN {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid input statement, skipping");
+        $$ = NULL;
     }
     ;
 
 output_stmt:
     OUTPUT LPAREN expr RPAREN { $$ = ast_output($3); }
+    | OUTPUT error RPAREN {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid output statement, skipping");
+        $$ = NULL;
+    }
     ;
 
 expr:
@@ -301,9 +343,7 @@ factor:
         $$ = ast_var($1);
         Symbol *sym = lookup_symbol(symtab, $1);
         if (!sym) {
-            char buf[256];
-            snprintf(buf, sizeof(buf), "variable '%s' not declared", $1);
-            semantic_error(buf);
+            error_list_add(error_list, yylineno, "Variable '%s' not declared", $1);
             ast_set_type($$, "unknown");
         } else {
             ast_set_type($$, get_type_name(sym->type));
@@ -323,6 +363,6 @@ type_spec:
 %%
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Syntax Error at line %d: %s\n", yylineno, s);
+    error_list_add(error_list, yylineno, "Syntax error: %s", s);
     semantic_errors = 1;
 }
