@@ -7,6 +7,7 @@
 
 %%
 
+"void"              { return TYPE_VOID; }
 "int"               { return TYPE_INT; }
 "float"             { return TYPE_FLOAT; }
 "bool"              { return TYPE_BOOL; }
@@ -17,7 +18,6 @@
 "return"            { return RETURN; }
 "input"             { return INPUT; }
 "output"            { return OUTPUT; }
-"void"              { return TYPE_VOID; }
 "true"              { yylval.ival = 1; return BOOL_LIT; }
 "false"             { yylval.ival = 0; return BOOL_LIT; }
 [a-zA-Z_][a-zA-Z0-9_]*  { yylval.sval = strdup(yytext); return IDENTIFIER; }

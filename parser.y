@@ -18,7 +18,7 @@ ASTNode *program_root;
     struct ASTNode *node;
 }
 
-%token TYPE_INT TYPE_FLOAT TYPE_BOOL
+%token TYPE_VOID TYPE_INT TYPE_FLOAT TYPE_BOOL
 %token IF ELSE WHILE FOR RETURN INPUT OUTPUT
 %token EQ NE LE GE AND OR ASSIGN
 %token PLUS MINUS STAR SLASH LT GT
@@ -26,7 +26,6 @@ ASTNode *program_root;
 %token <ival> INT_LIT BOOL_LIT
 %token <fval> FLOAT_LIT
 %token <sval> IDENTIFIER STRING_LIT
-%token TYPE_INT TYPE_FLOAT TYPE_BOOL TYPE_VOID
 
 %type <node> program declaration_list declaration function_list function
 %type <node> parameters parameter_list statement_list statement
@@ -170,10 +169,10 @@ factor:
     ;
 
 type_spec:
-    TYPE_INT    { $$ = ast_type("int"); }
+    TYPE_VOID  { $$ = ast_type("void"); }
+    | TYPE_INT    { $$ = ast_type("int"); }
     | TYPE_FLOAT { $$ = ast_type("float"); }
     | TYPE_BOOL  { $$ = ast_type("bool"); }
-    | TYPE_VOID  { $$ = ast_type("void"); }
     ;
 
 %%
