@@ -5,6 +5,7 @@
 #include "tac.h"
 #include "interpreter.h"
 #include "error_handler.h"
+#include "optimizer.h"
 
 extern FILE *yyin;
 extern int yyparse();
@@ -12,7 +13,7 @@ extern ASTNode *program_root;
 extern int semantic_errors;
 
 SymbolTable *symtab;
-ErrorList *error_list;   // ← THIS WAS MISSING - ADD THIS LINE
+ErrorList *error_list;
 
 int main(int argc, char **argv) {
     if(argc > 1) {
@@ -26,18 +27,21 @@ int main(int argc, char **argv) {
     }
 
     symtab = create_symbol_table();
-    error_list = error_list_create();  // ← CREATE ERROR LIST
+    error_list = error_list_create();
     semantic_errors = 0;
     
     int result = yyparse();
     
-    // Print all errors collected
     if (error_list_has_errors(error_list)) {
         error_list_print(error_list);
     }
     
     if(result == 0 && !error_list_has_errors(error_list)) {
         printf("Parsing successful.\n");
+        
+        // Apply constant folding optimization
+        optimize_ast(program_root);
+        
         ast_print(program_root, 0);
         print_symbol_table(symtab);
         

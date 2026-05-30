@@ -169,10 +169,10 @@ void interpreter_execute(TacProgram *prog) {
                     if (val[0] == '"') {
                         char *s = strdup(val + 1);
                         s[strlen(s)-1] = '\0';
-                        printf("%s", s);
+                        printf("%s\n", s);
                         free(s);
                     } else {
-                        printf("%s", val);
+                        printf("%s\n", val);
                     }
                 }
                 break;

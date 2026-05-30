@@ -286,6 +286,39 @@ void ast_print(ASTNode *node, int indent) {
     }
 }
 
+// Constant folding helper - returns a new constant node if expression is constant
+ASTNode* ast_try_fold(ASTNode *node) {
+    if (!node) return NULL;
+    
+    if (node->type == NODE_BINARY) {
+        ASTNode *left = node->data.binary.left;
+        ASTNode *right = node->data.binary.right;
+        
+        if (left && right && 
+            (left->type == NODE_INT_LIT || left->type == NODE_FLOAT_LIT) &&
+            (right->type == NODE_INT_LIT || right->type == NODE_FLOAT_LIT)) {
+            
+            const char *op = node->data.binary.op;
+            float l = (left->type == NODE_INT_LIT) ? left->data.ival : left->data.fval;
+            float r = (right->type == NODE_INT_LIT) ? right->data.ival : right->data.fval;
+            float result = 0;
+            
+            if (strcmp(op, "+") == 0) result = l + r;
+            else if (strcmp(op, "-") == 0) result = l - r;
+            else if (strcmp(op, "*") == 0) result = l * r;
+            else if (strcmp(op, "/") == 0) result = l / r;
+            else return node;
+            
+            if (result == (int)result && left->type == NODE_INT_LIT && right->type == NODE_INT_LIT) {
+                return ast_int_lit((int)result);
+            } else {
+                return ast_float_lit(result);
+            }
+        }
+    }
+    return node;
+}
+
 void ast_free(ASTNode *node) {
     if (!node) return;
     if (node->inferred_type) free(node->inferred_type);

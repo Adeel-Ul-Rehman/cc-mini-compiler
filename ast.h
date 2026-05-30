@@ -106,6 +106,7 @@ ASTNode* ast_bool_lit(int val);
 ASTNode* ast_string_lit(char *val);
 ASTNode* ast_var(char *name);
 ASTNode* ast_type(char *name);
+ASTNode* ast_try_fold(ASTNode *node);
 
 // Type helper functions
 const char* ast_get_type(ASTNode *node);
