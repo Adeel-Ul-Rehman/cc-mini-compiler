@@ -58,6 +58,17 @@ void exit_scope(SymbolTable *st) {
     st->current_scope--;
 }
 
+
+Symbol* lookup_symbol_current_scope(SymbolTable *st, char *name) {
+    unsigned int idx = hash(name);
+    Symbol *s = st->buckets[idx];
+    while(s) {
+        if(strcmp(s->name, name)==0 && s->scope_level == st->current_scope) return s;
+        s = s->next;
+    }
+    return NULL;
+}
+
 void insert_symbol(SymbolTable *st, char *name, ASTNode *type) {
     unsigned int idx = hash(name);
     Symbol *sym = (Symbol*)malloc(sizeof(Symbol));
@@ -79,12 +90,20 @@ Symbol* lookup_symbol(SymbolTable *st, char *name) {
 }
 
 void print_symbol_table(SymbolTable *st) {
-    printf("\n--- Symbol Table (scope=%d) ---\n", st->current_scope);
-    for(int i=0;i<TABLE_SIZE;i++) {
-        Symbol *s = st->buckets[i];
-        while(s) {
-            printf("Name: %s, scope: %d\n", s->name, s->scope_level);
-            s = s->next;
+    printf("\n--- Symbol Table ---\n");
+    for (int scope = 0; scope <= st->current_scope; scope++) {
+        printf("Scope %d:\n", scope);
+        for (int i = 0; i < st->size; i++) {
+            Symbol *s = st->buckets[i];
+            while (s) {
+                if (s->scope_level == scope) {
+                    const char *type_name = "unknown";
+                    if (s->type && s->type->type == NODE_TYPE)
+                        type_name = s->type->data.sval;
+                    printf("  %s : %s\n", s->name, type_name);
+                }
+                s = s->next;
+            }
         }
     }
 }

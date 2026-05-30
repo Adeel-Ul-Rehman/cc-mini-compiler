@@ -1,7 +1,6 @@
 %{
 #include "parser.h"
 #include <string.h>
-#include <stdio.h>
 %}
 
 %option noyywrap
@@ -44,7 +43,7 @@
 "}"                 { return RBRACE; }
 ";"                 { return SEMICOLON; }
 ","                 { return COMMA; }
-[ \t\n\r]+          { /* skip whitespace */ }
+[ \t\n\r]+          { /* skip */ }
 .                   { fprintf(stderr, "Unknown char '%c'\n", yytext[0]); return 0; }
 
 %%

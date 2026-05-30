@@ -15,6 +15,7 @@ typedef enum {
 
 typedef struct ASTNode {
     NodeType type;
+    char *inferred_type;   // for type checking (e.g., "int", "float", "bool", "void", "string")
     union {
         struct {
             struct ASTNode *decls;
@@ -82,6 +83,7 @@ typedef struct ASTNode {
     } data;
 } ASTNode;
 
+// Constructor functions (same as before)
 ASTNode* ast_program(ASTNode *decls, ASTNode *funcs);
 ASTNode* ast_decl_list(ASTNode *next, ASTNode *node);
 ASTNode* ast_declaration(ASTNode *type, char *name, ASTNode *init);
@@ -104,6 +106,10 @@ ASTNode* ast_bool_lit(int val);
 ASTNode* ast_string_lit(char *val);
 ASTNode* ast_var(char *name);
 ASTNode* ast_type(char *name);
+
+// Type helper functions
+const char* ast_get_type(ASTNode *node);
+void ast_set_type(ASTNode *node, const char *type);
 
 void ast_print(ASTNode *node, int indent);
 void ast_free(ASTNode *node);

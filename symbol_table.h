@@ -25,6 +25,7 @@ void destroy_symbol_table(SymbolTable *st);
 void enter_scope(SymbolTable *st);
 void exit_scope(SymbolTable *st);
 void insert_symbol(SymbolTable *st, char *name, ASTNode *type);
+Symbol* lookup_symbol_current_scope(SymbolTable *st, char *name);
 Symbol* lookup_symbol(SymbolTable *st, char *name);
 void print_symbol_table(SymbolTable *st);
 
