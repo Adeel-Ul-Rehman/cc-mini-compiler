@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C Mini Compiler - Web IDE</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>⚡ C Mini Compiler</h1>
+            <p>Write, Compile & Execute C-like code in your browser</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Left Panel: Code Editor -->
+            <div class="panel editor-panel">
+                <div class="panel-header">
+                    <span class="panel-title">📝 Code Editor</span>
+                    <div class="button-group">
+                        <button id="compileBtn" class="btn btn-primary">▶ Compile & Run</button>
+                        <button id="clearBtn" class="btn btn-secondary">🗑 Clear</button>
+                        <button id="resetBtn" class="btn btn-secondary">⟳ Reset</button>
+                    </div>
+                </div>
+                <div class="editor-container">
+                    <textarea id="codeEditor" class="code-editor" spellcheck="false"></textarea>
+                </div>
+            </div>
+
+            <!-- Right Panel: Output -->
+            <div class="panel output-panel">
+                <div class="panel-header">
+                    <span class="panel-title">📤 Output</span>
+                    <div class="tab-buttons">
+                        <button id="outputTab" class="tab-btn active">Output</button>
+                        <button id="errorsTab" class="tab-btn">Errors</button>
+                    </div>
+                </div>
+                <div class="output-container">
+                    <pre id="outputArea" class="output-area"></pre>
+                    <pre id="errorsArea" class="output-area error-area" style="display: none;"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>Supports: int, float, bool, if-else, while, for, functions, input/output</p>
+            <div class="loading" id="loading" style="display: none;">
+                <div class="spinner"></div>
+                <span>Compiling...</span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
