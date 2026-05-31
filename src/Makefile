@@ -3,6 +3,14 @@ CFLAGS = -Wall -g -std=c++11
 LEX = flex
 YACC = bison -d
 
+# Detect OS
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+    LFLAGS = -lfl
+else
+    LFLAGS = 
+endif
+
 all: compiler
 
 lexer.c: lexer.l
@@ -12,7 +20,7 @@ parser.c parser.h: parser.y
 	$(YACC) -o parser.c parser.y
 
 compiler: lexer.c parser.c ast.cpp symbol_table.cpp tac.cpp interpreter.cpp error_handler.cpp optimizer.cpp main.cpp
-	$(CC) $(CFLAGS) -o compiler lexer.c parser.c ast.cpp symbol_table.cpp tac.cpp interpreter.cpp error_handler.cpp optimizer.cpp main.cpp
+	$(CC) $(CFLAGS) -o compiler lexer.c parser.c ast.cpp symbol_table.cpp tac.cpp interpreter.cpp error_handler.cpp optimizer.cpp main.cpp $(LFLAGS)
 
 clean:
 	rm -f lexer.c parser.c parser.h compiler *.o

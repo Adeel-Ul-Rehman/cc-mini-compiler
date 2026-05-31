@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: c-mini-compiler
+    runtime: python
+    buildCommand: |
+      apt-get update
+      apt-get install -y flex bison g++
+      cd src
+      make clean
+      make
+      cd ..
+      pip install -r web-gui/requirements.txt
+    startCommand: cd web-gui && gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.0
