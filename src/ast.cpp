@@ -19,9 +19,7 @@ ASTNode* ast_program(ASTNode *decls, ASTNode *funcs) {
 
 ASTNode* ast_decl_list(ASTNode *next, ASTNode *node) {
     ASTNode *list = new_node(NODE_DECL_LIST);
-    // Store in correct order - next is previous list
     if (next) {
-        // Find tail
         ASTNode *tail = next;
         while (tail->data.list.next) {
             tail = tail->data.list.next;
@@ -47,6 +45,57 @@ ASTNode* ast_declaration(ASTNode *type, char *name, ASTNode *init) {
     } else {
         ast_set_type(node, ast_get_type(type));
     }
+    return node;
+}
+
+ASTNode* ast_array_decl(ASTNode *type, char *name, ASTNode *size, ASTNode *init) {
+    ASTNode *node = new_node(NODE_ARRAY_DECL);
+    node->data.array_decl.type = type;
+    node->data.array_decl.name = strdup(name);
+    node->data.array_decl.size = size;
+    node->data.array_decl.init_list = init;
+    ast_set_type(node, "array");
+    return node;
+}
+
+ASTNode* ast_array_access(char *name, ASTNode *index) {
+    ASTNode *node = new_node(NODE_ARRAY_ACCESS);
+    node->data.array_access.name = strdup(name);
+    node->data.array_access.index = index;
+    ast_set_type(node, "int");
+    return node;
+}
+
+ASTNode* ast_array_init_list(ASTNode *next, ASTNode *value) {
+    ASTNode *node = new_node(NODE_ARRAY_INIT);
+    if (next) {
+        ASTNode *tail = next;
+        while (tail->data.list.next) {
+            tail = tail->data.list.next;
+        }
+        tail->data.list.next = node;
+        node->data.list.node = value;
+        node->data.list.next = NULL;
+        return next;
+    } else {
+        node->data.list.node = value;
+        node->data.list.next = NULL;
+        return node;
+    }
+}
+
+ASTNode* ast_array_assign(ASTNode *lvalue, ASTNode *expr) {
+    ASTNode *node = new_node(NODE_ARRAY_ASSIGN);
+    node->data.array_assign.lvalue = lvalue;
+    node->data.array_assign.expr = expr;
+    ast_set_type(node, "void");
+    return node;
+}
+
+ASTNode* ast_input_array(ASTNode *access) {
+    ASTNode *node = new_node(NODE_INPUT_ARRAY);
+    node->data.input_array.access = access;
+    ast_set_type(node, "void");
     return node;
 }
 
@@ -106,7 +155,6 @@ ASTNode* ast_block(ASTNode *stmts) {
 
 ASTNode* ast_stmt_list(ASTNode *next, ASTNode *node) {
     ASTNode *list = new_node(NODE_STMT_LIST);
-    // Maintain order: new node goes to the end
     if (next) {
         ASTNode *tail = next;
         while (tail->data.list.next) {
@@ -246,6 +294,8 @@ const char* ast_get_type(ASTNode *node) {
         case NODE_STRING_LIT: return "string";
         case NODE_TYPE: return node->data.sval;
         case NODE_VAR: return "unknown";
+        case NODE_ARRAY_ACCESS: return "int";
+        case NODE_ARRAY_DECL: return "array";
         default: return "unknown";
     }
 }
@@ -263,6 +313,14 @@ void ast_print(ASTNode *node, int indent) {
         case NODE_PROGRAM: printf("Program\n"); ast_print(node->data.program.decls, indent+2); ast_print(node->data.program.funcs, indent+2); break;
         case NODE_DECL_LIST: ast_print(node->data.list.node, indent); ast_print(node->data.list.next, indent); break;
         case NODE_DECL: printf("Decl: %s (%s)\n", node->data.decl.name, node->inferred_type ? node->inferred_type : "?"); ast_print(node->data.decl.type, indent+2); if(node->data.decl.init) ast_print(node->data.decl.init, indent+2); break;
+        case NODE_ARRAY_DECL: printf("Array Decl: %s", node->data.array_decl.name); 
+            if (node->data.array_decl.size) { printf("["); ast_print(node->data.array_decl.size, 0); printf("]"); }
+            if (node->data.array_decl.init_list) { printf(" = { "); ast_print(node->data.array_decl.init_list, 0); printf(" }"); }
+            printf("\n"); break;
+        case NODE_ARRAY_ACCESS: printf("%s[", node->data.array_access.name); ast_print(node->data.array_access.index, 0); printf("]"); break;
+        case NODE_ARRAY_INIT: ast_print(node->data.list.node, 0); if (node->data.list.next) { printf(", "); ast_print(node->data.list.next, 0); } break;
+        case NODE_ARRAY_ASSIGN: printf("ArrayAssign: "); ast_print(node->data.array_assign.lvalue, 0); printf(" = "); ast_print(node->data.array_assign.expr, 0); printf("\n"); break;
+        case NODE_INPUT_ARRAY: printf("InputArray: "); ast_print(node->data.input_array.access, 0); printf("\n"); break;
         case NODE_FUNC_LIST: ast_print(node->data.list.node, indent); ast_print(node->data.list.next, indent); break;
         case NODE_FUNC: printf("Func: %s (%s)\n", node->data.func.name, node->inferred_type ? node->inferred_type : "?"); ast_print(node->data.func.ret_type, indent+2); ast_print(node->data.func.params, indent+2); ast_print(node->data.func.body, indent+2); break;
         case NODE_PARAM_LIST: printf("Param: %s (%s)\n", node->data.param.name, node->inferred_type ? node->inferred_type : "?"); ast_print(node->data.param.type, indent+2); ast_print(node->data.param.next, indent); break;
@@ -282,33 +340,25 @@ void ast_print(ASTNode *node, int indent) {
         case NODE_STRING_LIT: printf("String: %s\n", node->data.sval); break;
         case NODE_VAR: printf("Var: %s (%s)\n", node->data.sval, node->inferred_type ? node->inferred_type : "?"); break;
         case NODE_TYPE: printf("Type: %s\n", node->data.sval); break;
-        default: break;
+        default: printf("Unknown Node\n"); break;
     }
 }
 
-// Constant folding helper - returns a new constant node if expression is constant
 ASTNode* ast_try_fold(ASTNode *node) {
     if (!node) return NULL;
-    
     if (node->type == NODE_BINARY) {
         ASTNode *left = node->data.binary.left;
         ASTNode *right = node->data.binary.right;
-        
-        if (left && right && 
-            (left->type == NODE_INT_LIT || left->type == NODE_FLOAT_LIT) &&
-            (right->type == NODE_INT_LIT || right->type == NODE_FLOAT_LIT)) {
-            
+        if (left && right && (left->type == NODE_INT_LIT || left->type == NODE_FLOAT_LIT) && (right->type == NODE_INT_LIT || right->type == NODE_FLOAT_LIT)) {
             const char *op = node->data.binary.op;
             float l = (left->type == NODE_INT_LIT) ? left->data.ival : left->data.fval;
             float r = (right->type == NODE_INT_LIT) ? right->data.ival : right->data.fval;
             float result = 0;
-            
             if (strcmp(op, "+") == 0) result = l + r;
             else if (strcmp(op, "-") == 0) result = l - r;
             else if (strcmp(op, "*") == 0) result = l * r;
             else if (strcmp(op, "/") == 0) result = l / r;
             else return node;
-            
             if (result == (int)result && left->type == NODE_INT_LIT && right->type == NODE_INT_LIT) {
                 return ast_int_lit((int)result);
             } else {
@@ -322,5 +372,26 @@ ASTNode* ast_try_fold(ASTNode *node) {
 void ast_free(ASTNode *node) {
     if (!node) return;
     if (node->inferred_type) free(node->inferred_type);
+    if (node->type == NODE_ARRAY_DECL) {
+        if (node->data.array_decl.name) free(node->data.array_decl.name);
+    } else if (node->type == NODE_ARRAY_ACCESS) {
+        if (node->data.array_access.name) free(node->data.array_access.name);
+    } else if (node->type == NODE_VAR) {
+        if (node->data.sval) free(node->data.sval);
+    } else if (node->type == NODE_TYPE) {
+        if (node->data.sval) free(node->data.sval);
+    } else if (node->type == NODE_STRING_LIT) {
+        if (node->data.sval) free(node->data.sval);
+    } else if (node->type == NODE_INPUT) {
+        if (node->data.input.var) free(node->data.input.var);
+    } else if (node->type == NODE_ASSIGN) {
+        if (node->data.assign.name) free(node->data.assign.name);
+    } else if (node->type == NODE_FUNC) {
+        if (node->data.func.name) free(node->data.func.name);
+    } else if (node->type == NODE_DECL) {
+        if (node->data.decl.name) free(node->data.decl.name);
+    } else if (node->type == NODE_PARAM_LIST) {
+        if (node->data.param.name) free(node->data.param.name);
+    }
     free(node);
 }

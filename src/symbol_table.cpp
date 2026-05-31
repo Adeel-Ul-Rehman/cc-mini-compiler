@@ -69,6 +69,18 @@ Symbol* lookup_symbol_current_scope(SymbolTable *st, char *name) {
     return NULL;
 }
 
+void insert_array_symbol(SymbolTable *st, char *name, ASTNode *type, int size) {
+    unsigned int idx = hash(name);
+    Symbol *sym = (Symbol*)malloc(sizeof(Symbol));
+    sym->name = strdup(name);
+    sym->type = type;
+    sym->scope_level = st->current_scope;
+    sym->is_array = 1;
+    sym->array_size = size;
+    sym->next = st->buckets[idx];
+    st->buckets[idx] = sym;
+}
+
 void insert_symbol(SymbolTable *st, char *name, ASTNode *type) {
     unsigned int idx = hash(name);
     Symbol *sym = (Symbol*)malloc(sizeof(Symbol));
@@ -100,7 +112,11 @@ void print_symbol_table(SymbolTable *st) {
                     const char *type_name = "unknown";
                     if (s->type && s->type->type == NODE_TYPE)
                         type_name = s->type->data.sval;
-                    printf("  %s : %s\n", s->name, type_name);
+                    if (s->is_array) {
+                        printf("  %s : %s[%d]\n", s->name, type_name, s->array_size);
+                    } else {
+                        printf("  %s : %s\n", s->name, type_name);
+                    }
                 }
                 s = s->next;
             }

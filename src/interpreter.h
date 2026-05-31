@@ -3,12 +3,7 @@
 
 #include "tac.h"
 
-typedef struct {
-    char **names;
-    char **values;
-    int count;
-    int capacity;
-} Memory;
+typedef struct Memory Memory;
 
 Memory* memory_create();
 void memory_set(Memory *mem, const char *name, const char *value);

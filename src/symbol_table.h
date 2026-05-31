@@ -11,6 +11,8 @@ typedef struct Symbol {
     char *name;
     ASTNode *type;
     int scope_level;
+    int is_array;
+    int array_size;
     struct Symbol *next;
 } Symbol;
 
@@ -28,6 +30,7 @@ void insert_symbol(SymbolTable *st, char *name, ASTNode *type);
 Symbol* lookup_symbol_current_scope(SymbolTable *st, char *name);
 Symbol* lookup_symbol(SymbolTable *st, char *name);
 void print_symbol_table(SymbolTable *st);
+void insert_array_symbol(SymbolTable *st, char *name, ASTNode *type, int size);
 
 #ifdef __cplusplus
 }

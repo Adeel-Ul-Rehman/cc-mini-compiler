@@ -41,6 +41,8 @@
 ")"                 { return RPAREN; }
 "{"                 { return LBRACE; }
 "}"                 { return RBRACE; }
+"["                 { return LBRACK; }
+"]"                 { return RBRACK; }
 ";"                 { return SEMICOLON; }
 ","                 { return COMMA; }
 [ \t\n\r]+          { /* skip */ }

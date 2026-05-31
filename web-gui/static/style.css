@@ -17,7 +17,6 @@ body {
     padding: 20px;
 }
 
-/* Header */
 header {
     text-align: center;
     margin-bottom: 30px;
@@ -37,7 +36,6 @@ header p {
     font-size: 0.9rem;
 }
 
-/* Main Content */
 .main-content {
     display: flex;
     gap: 20px;
@@ -70,7 +68,6 @@ header p {
     font-size: 1.1rem;
 }
 
-/* Buttons */
 .button-group {
     display: flex;
     gap: 10px;
@@ -105,7 +102,6 @@ header p {
     background: #3a3a4a;
 }
 
-/* Editor */
 .editor-container {
     height: calc(100% - 60px);
     min-height: 500px;
@@ -130,7 +126,6 @@ header p {
     background: #0d0d12;
 }
 
-/* Output Panel */
 .output-container {
     height: calc(100% - 60px);
     min-height: 500px;
@@ -154,7 +149,6 @@ header p {
     color: #ff6b6b;
 }
 
-/* Tabs */
 .tab-buttons {
     display: flex;
     gap: 5px;
@@ -181,7 +175,6 @@ header p {
     color: #ddd;
 }
 
-/* Footer */
 footer {
     text-align: center;
     padding: 20px;
@@ -195,7 +188,6 @@ footer p {
     font-size: 0.8rem;
 }
 
-/* Loading Spinner */
 .loading {
     margin-top: 15px;
     display: flex;
@@ -217,7 +209,6 @@ footer p {
     to { transform: rotate(360deg); }
 }
 
-/* Responsive */
 @media (max-width: 900px) {
     .main-content {
         flex-direction: column;
@@ -233,7 +224,6 @@ footer p {
     }
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;

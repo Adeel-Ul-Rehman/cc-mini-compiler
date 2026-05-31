@@ -84,11 +84,13 @@ extern int yydebug;
     RBRACE = 285,                  /* RBRACE  */
     SEMICOLON = 286,               /* SEMICOLON  */
     COMMA = 287,                   /* COMMA  */
-    INT_LIT = 288,                 /* INT_LIT  */
-    BOOL_LIT = 289,                /* BOOL_LIT  */
-    FLOAT_LIT = 290,               /* FLOAT_LIT  */
-    IDENTIFIER = 291,              /* IDENTIFIER  */
-    STRING_LIT = 292               /* STRING_LIT  */
+    LBRACK = 288,                  /* LBRACK  */
+    RBRACK = 289,                  /* RBRACK  */
+    INT_LIT = 290,                 /* INT_LIT  */
+    BOOL_LIT = 291,                /* BOOL_LIT  */
+    FLOAT_LIT = 292,               /* FLOAT_LIT  */
+    IDENTIFIER = 293,              /* IDENTIFIER  */
+    STRING_LIT = 294               /* STRING_LIT  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -97,14 +99,14 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 47 "parser.y"
+#line 54 "parser.y"
 
     int ival;
     float fval;
     char *sval;
     struct ASTNode *node;
 
-#line 108 "parser.h"
+#line 110 "parser.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

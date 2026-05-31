@@ -10,12 +10,13 @@ typedef enum {
     NODE_PARAM_LIST, NODE_BLOCK, NODE_STMT_LIST, NODE_ASSIGN,
     NODE_IF, NODE_WHILE, NODE_FOR, NODE_RETURN, NODE_INPUT, NODE_OUTPUT,
     NODE_BINARY, NODE_INT_LIT, NODE_FLOAT_LIT, NODE_BOOL_LIT, NODE_STRING_LIT,
-    NODE_VAR, NODE_TYPE
+    NODE_VAR, NODE_TYPE,
+    NODE_ARRAY_DECL, NODE_ARRAY_ACCESS, NODE_ARRAY_INIT, NODE_ARRAY_ASSIGN, NODE_INPUT_ARRAY
 } NodeType;
 
 typedef struct ASTNode {
     NodeType type;
-    char *inferred_type;   // for type checking (e.g., "int", "float", "bool", "void", "string")
+    char *inferred_type;
     union {
         struct {
             struct ASTNode *decls;
@@ -80,10 +81,28 @@ typedef struct ASTNode {
         int ival;
         float fval;
         char *sval;
+        // Array nodes
+        struct {
+            struct ASTNode *type;
+            char *name;
+            struct ASTNode *size;
+            struct ASTNode *init_list;
+        } array_decl;
+        struct {
+            char *name;
+            struct ASTNode *index;
+        } array_access;
+        struct {
+            struct ASTNode *lvalue;
+            struct ASTNode *expr;
+        } array_assign;
+        struct {
+            struct ASTNode *access;
+        } input_array;
     } data;
 } ASTNode;
 
-// Constructor functions (same as before)
+// Constructor functions
 ASTNode* ast_program(ASTNode *decls, ASTNode *funcs);
 ASTNode* ast_decl_list(ASTNode *next, ASTNode *node);
 ASTNode* ast_declaration(ASTNode *type, char *name, ASTNode *init);
@@ -106,14 +125,24 @@ ASTNode* ast_bool_lit(int val);
 ASTNode* ast_string_lit(char *val);
 ASTNode* ast_var(char *name);
 ASTNode* ast_type(char *name);
-ASTNode* ast_try_fold(ASTNode *node);
 
-// Type helper functions
+// Array functions
+ASTNode* ast_array_decl(ASTNode *type, char *name, ASTNode *size, ASTNode *init);
+ASTNode* ast_array_access(char *name, ASTNode *index);
+ASTNode* ast_array_init_list(ASTNode *next, ASTNode *value);
+ASTNode* ast_array_assign(ASTNode *lvalue, ASTNode *expr);
+ASTNode* ast_input_array(ASTNode *access);
+
+// Type functions
 const char* ast_get_type(ASTNode *node);
 void ast_set_type(ASTNode *node, const char *type);
 
+// Print and free
 void ast_print(ASTNode *node, int indent);
 void ast_free(ASTNode *node);
+
+// Optimization
+ASTNode* ast_try_fold(ASTNode *node);
 
 #ifdef __cplusplus
 }

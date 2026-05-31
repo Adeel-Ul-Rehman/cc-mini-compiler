@@ -33,10 +33,17 @@ const char* get_factor_type(ASTNode *node) {
         case NODE_FLOAT_LIT: return "float";
         case NODE_BOOL_LIT: return "int";
         case NODE_STRING_LIT: return "string";
+        case NODE_ARRAY_ACCESS:
+            return "int";  // Array elements are int for now
         case NODE_VAR: {
             char *name = node->data.sval;
             Symbol *sym = lookup_symbol(symtab, name);
-            if (sym && sym->type) return get_type_name(sym->type);
+            if (sym && sym->type) {
+                if (sym->is_array) {
+                    return "int";  // Array element type
+                }
+                return get_type_name(sym->type);
+            }
             return "unknown";
         }
         default: return "unknown";
@@ -56,6 +63,7 @@ const char* get_factor_type(ASTNode *node) {
 %token EQ NE LE GE AND OR ASSIGN
 %token PLUS MINUS STAR SLASH LT GT
 %token LPAREN RPAREN LBRACE RBRACE SEMICOLON COMMA
+%token LBRACK RBRACK
 %token <ival> INT_LIT BOOL_LIT
 %token <fval> FLOAT_LIT
 %token <sval> IDENTIFIER STRING_LIT
@@ -67,6 +75,7 @@ const char* get_factor_type(ASTNode *node) {
 %type <node> stmt stmt_list
 %type <node> assign_stmt if_stmt while_stmt for_stmt return_stmt input_stmt output_stmt
 %type <node> expr logical_or logical_and equality relational additive multiplicative factor
+%type <node> array_decl array_access array_init_list
 
 %start program
 
@@ -102,11 +111,6 @@ decl:
         }
         $$ = ast_declaration($1, $2, NULL);
     }
-    | error SEMICOLON {
-        yyclearin;
-        error_list_add(error_list, yylineno, "Invalid declaration, skipping to next semicolon");
-        $$ = NULL;
-    }
     | type_spec IDENTIFIER ASSIGN expr SEMICOLON {
         const char *spec = get_type_name($1);
         const char *expr_type = "unknown";
@@ -131,6 +135,40 @@ decl:
             }
         }
         $$ = ast_declaration($1, $2, $4);
+    }
+    | type_spec IDENTIFIER LBRACK expr RBRACK SEMICOLON {
+        // Array declaration without initialization
+        // Check if size is constant
+        $$ = ast_array_decl($1, $2, $4, NULL);
+        // Insert into symbol table
+        if (lookup_symbol_current_scope(symtab, $2)) {
+            error_list_add(error_list, yylineno, "Array '%s' already declared", $2);
+        } else {
+            // Get size if constant
+            int size = 0;
+            if ($4 && $4->type == NODE_INT_LIT) {
+                size = $4->data.ival;
+            }
+            insert_array_symbol(symtab, $2, $1, size);
+        }
+    }
+    | type_spec IDENTIFIER LBRACK expr RBRACK ASSIGN LBRACE array_init_list RBRACE SEMICOLON {
+        // Array declaration with initialization
+        $$ = ast_array_decl($1, $2, $4, $8);
+        if (lookup_symbol_current_scope(symtab, $2)) {
+            error_list_add(error_list, yylineno, "Array '%s' already declared", $2);
+        } else {
+            int size = 0;
+            if ($4 && $4->type == NODE_INT_LIT) {
+                size = $4->data.ival;
+            }
+            insert_array_symbol(symtab, $2, $1, size);
+        }
+    }
+    | error SEMICOLON {
+        yyclearin;
+        error_list_add(error_list, yylineno, "Invalid declaration, skipping to next semicolon");
+        $$ = NULL;
     }
     ;
 
@@ -211,6 +249,8 @@ assign_stmt:
         Symbol *sym = lookup_symbol(symtab, $1);
         if (!sym) {
             error_list_add(error_list, yylineno, "Variable '%s' not declared", $1);
+        } else if (sym->is_array) {
+            error_list_add(error_list, yylineno, "Cannot assign to array '%s' without index", $1);
         } else {
             const char *var_type = get_type_name(sym->type);
             const char *expr_type = "unknown";
@@ -230,6 +270,34 @@ assign_stmt:
             }
         }
         $$ = ast_assignment($1, $3);
+    }
+    | IDENTIFIER LBRACK expr RBRACK ASSIGN expr {
+        // Array element assignment: arr[index] = value
+        Symbol *sym = lookup_symbol(symtab, $1);
+        if (!sym) {
+            error_list_add(error_list, yylineno, "Array '%s' not declared", $1);
+        } else if (!sym->is_array) {
+            error_list_add(error_list, yylineno, "'%s' is not an array", $1);
+        } else {
+            const char *expr_type = "unknown";
+            if ($6) {
+                if ($6->type == NODE_FLOAT_LIT) expr_type = "float";
+                else if ($6->type == NODE_INT_LIT) expr_type = "int";
+                else if ($6->type == NODE_BOOL_LIT) expr_type = "int";
+                else if ($6->type == NODE_STRING_LIT) expr_type = "string";
+                else if ($6->type == NODE_VAR) {
+                    Symbol *s = lookup_symbol(symtab, $6->data.sval);
+                    if (s && s->type) expr_type = get_type_name(s->type);
+                }
+                else expr_type = ast_get_type($6);
+            }
+            // Array elements are int type for now
+            if (strcmp("int", expr_type) != 0 && strcmp("float", expr_type) != 0) {
+                error_list_add(error_list, yylineno, "Type mismatch in array assignment");
+            }
+        }
+        ASTNode *access = ast_array_access($1, $3);
+        $$ = ast_array_assign(access, $6);
     }
     ;
 
@@ -279,6 +347,17 @@ input_stmt:
         }
         $$ = ast_input($3);
     }
+    | INPUT LPAREN IDENTIFIER LBRACK expr RBRACK RPAREN {
+        // Input into array element: input(arr[index])
+        Symbol *sym = lookup_symbol(symtab, $3);
+        if (!sym) {
+            error_list_add(error_list, yylineno, "Array '%s' not declared", $3);
+        } else if (!sym->is_array) {
+            error_list_add(error_list, yylineno, "'%s' is not an array", $3);
+        }
+        ASTNode *access = ast_array_access($3, $5);
+        $$ = ast_input_array(access);
+    }
     | INPUT error RPAREN {
         yyclearin;
         error_list_add(error_list, yylineno, "Invalid input statement, skipping");
@@ -293,6 +372,11 @@ output_stmt:
         error_list_add(error_list, yylineno, "Invalid output statement, skipping");
         $$ = NULL;
     }
+    ;
+
+array_init_list:
+    expr { $$ = ast_array_init_list(NULL, $1); }
+    | array_init_list COMMA expr { $$ = ast_array_init_list($1, $3); }
     ;
 
 expr:
@@ -345,11 +429,27 @@ factor:
         if (!sym) {
             error_list_add(error_list, yylineno, "Variable '%s' not declared", $1);
             ast_set_type($$, "unknown");
+        } else if (sym->is_array) {
+            error_list_add(error_list, yylineno, "Array '%s' used without index", $1);
+            ast_set_type($$, "unknown");
         } else {
             ast_set_type($$, get_type_name(sym->type));
         }
     }
     | STRING_LIT       { $$ = ast_string_lit($1); ast_set_type($$, "string"); }
+    | IDENTIFIER LBRACK expr RBRACK {
+        $$ = ast_array_access($1, $3);
+        Symbol *sym = lookup_symbol(symtab, $1);
+        if (!sym) {
+            error_list_add(error_list, yylineno, "Array '%s' not declared", $1);
+            ast_set_type($$, "unknown");
+        } else if (!sym->is_array) {
+            error_list_add(error_list, yylineno, "'%s' is not an array", $1);
+            ast_set_type($$, "unknown");
+        } else {
+            ast_set_type($$, "int");  // Array elements are int
+        }
+    }
     | LPAREN expr RPAREN  { $$ = $2; ast_set_type($$, ast_get_type($2)); }
     ;
 

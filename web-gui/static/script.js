@@ -1,19 +1,10 @@
-// Default example code
 const DEFAULT_CODE = `int main() {
     int a;
-    int b;
-    int c;
-    
-    a = 5;
-    b = 10;
-    c = a + b;
-    
-    output(c);
-    
+    a = 10;
+    output(a);
     return 0;
 }`;
 
-// DOM Elements
 const codeEditor = document.getElementById('codeEditor');
 const compileBtn = document.getElementById('compileBtn');
 const clearBtn = document.getElementById('clearBtn');
@@ -24,10 +15,8 @@ const outputTab = document.getElementById('outputTab');
 const errorsTab = document.getElementById('errorsTab');
 const loading = document.getElementById('loading');
 
-// Set default code
 codeEditor.value = DEFAULT_CODE;
 
-// Tab switching
 outputTab.addEventListener('click', () => {
     outputTab.classList.add('active');
     errorsTab.classList.remove('active');
@@ -42,7 +31,6 @@ errorsTab.addEventListener('click', () => {
     outputArea.style.display = 'none';
 });
 
-// Clear button
 clearBtn.addEventListener('click', () => {
     codeEditor.value = '';
     outputArea.textContent = '';
@@ -50,7 +38,6 @@ clearBtn.addEventListener('click', () => {
     outputTab.click();
 });
 
-// Reset button
 resetBtn.addEventListener('click', () => {
     codeEditor.value = DEFAULT_CODE;
     outputArea.textContent = '';
@@ -58,7 +45,6 @@ resetBtn.addEventListener('click', () => {
     outputTab.click();
 });
 
-// Compile and Run
 compileBtn.addEventListener('click', async () => {
     const code = codeEditor.value;
     
@@ -68,9 +54,10 @@ compileBtn.addEventListener('click', async () => {
         return;
     }
     
-    // Show loading
     loading.style.display = 'flex';
     compileBtn.disabled = true;
+    outputArea.textContent = '';
+    errorsArea.textContent = '';
     
     try {
         const response = await fetch('/compile', {
@@ -86,20 +73,11 @@ compileBtn.addEventListener('click', async () => {
         if (result.success) {
             outputArea.textContent = result.output || 'Compilation successful. No output.';
             errorsArea.textContent = result.errors || 'No errors.';
+            outputTab.click();
         } else {
-            outputArea.textContent = result.output || 'Compilation failed.';
-            errorsArea.textContent = result.errors || 'Unknown error occurred.';
-        }
-        
-        // Show output tab by default
-        outputTab.click();
-        
-        // If errors exist, highlight errors tab
-        if (result.errors && result.errors.trim()) {
-            errorsTab.classList.add('active');
-            outputTab.classList.remove('active');
-            errorsArea.style.display = 'block';
-            outputArea.style.display = 'none';
+            outputArea.textContent = result.output || '';
+            errorsArea.textContent = result.errors || 'Compilation failed with unknown error.';
+            errorsTab.click();
         }
         
     } catch (error) {
@@ -111,7 +89,6 @@ compileBtn.addEventListener('click', async () => {
     }
 });
 
-// Keyboard shortcut: Ctrl+Enter to compile
 codeEditor.addEventListener('keydown', (e) => {
     if (e.ctrlKey && e.key === 'Enter') {
         e.preventDefault();

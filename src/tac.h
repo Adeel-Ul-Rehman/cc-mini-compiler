@@ -3,16 +3,31 @@
 
 #include "ast.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum {
-    TAC_ADD, TAC_SUB, TAC_MUL, TAC_DIV,
-    TAC_ASSIGN, TAC_LABEL, TAC_GOTO, TAC_IFGOTO,
-    TAC_PARAM, TAC_CALL, TAC_RETURN,
-    TAC_INPUT, TAC_OUTPUT
+    TAC_ADD,
+    TAC_SUB,
+    TAC_MUL,
+    TAC_DIV,
+    TAC_ASSIGN,
+    TAC_LABEL,
+    TAC_GOTO,
+    TAC_IFGOTO,
+    TAC_PARAM,
+    TAC_CALL,
+    TAC_RETURN,
+    TAC_INPUT,
+    TAC_OUTPUT,
+    TAC_ARRAY_STORE,
+    TAC_ARRAY_LOAD
 } TacOp;
 
 typedef struct TacInstr {
     TacOp op;
-    char *result;   // temporary variable or variable name
+    char *result;
     char *arg1;
     char *arg2;
     struct TacInstr *next;
@@ -29,8 +44,10 @@ void tac_add_instr(TacProgram *prog, TacOp op, const char *result, const char *a
 char* tac_new_temp(TacProgram *prog);
 void tac_print(TacProgram *prog);
 void tac_free(TacProgram *prog);
-
-// TAC generation from AST
 TacProgram* tac_generate(ASTNode *node);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
