@@ -1,0 +1,260 @@
+# C Mini Compiler
+
+A lightweight C-like compiler with support for variables, functions, control flow, arrays, and optimization. This project includes both a command-line interface and a modern web-based GUI for easy code compilation and execution.
+
+## Features
+
+- ✅ **Lexical Analysis** - Tokenization using Flex
+- ✅ **Syntax Analysis** - Parsing using Bison
+- ✅ **Symbol Table Management** - Variable and function tracking
+- ✅ **Three-Address Code (TAC)** - Intermediate code generation
+- ✅ **Error Recovery** - Robust error handling and reporting
+- ✅ **Code Optimization** - Constant folding and optimization passes
+- ✅ **Interpreter** - Direct execution of compiled code
+- ✅ **Web GUI** - Flask-based interactive compiler interface
+- ✅ **Array Support** - Dynamic array handling with bounds checking
+- ✅ **Control Flow** - if-else, while, for loops support
+- ✅ **Functions** - User-defined and built-in functions
+
+## Supported Syntax
+
+```c
+int main() {
+    int a, b, c;
+    a = 5;
+    b = 10;
+    c = a + b;
+    
+    if (c > 10) {
+        output(c);
+    }
+    
+    return 0;
+}
+```
+
+- **Data Types**: int, float, bool
+- **Operators**: Arithmetic (+, -, *, /, %), Logical (&&, ||, !), Comparison (==, !=, <, >, <=, >=)
+- **Control Flow**: if-else, while loops, for loops
+- **Functions**: Function declarations and calls
+- **Built-in**: input(), output() functions
+
+## Project Structure
+
+```
+project/
+├── src/                          # Compiler source code
+│   ├── lexer.l                   # Flex lexical analyzer
+│   ├── parser.y                  # Bison parser
+│   ├── ast.cpp/ast.h             # Abstract Syntax Tree
+│   ├── symbol_table.cpp/h        # Symbol table management
+│   ├── tac.cpp/h                 # Three-Address Code generator
+│   ├── interpreter.cpp/h         # Code interpreter
+│   ├── error_handler.cpp/h       # Error handling
+│   ├── optimizer.cpp/h           # Code optimization
+│   ├── main.cpp                  # Compiler entry point
+│   ├── compiler.exe              # Compiled binary
+│   └── Makefile                  # Build configuration
+├── test_cases/                   # Test files for validation
+│   ├── test_valid.c
+│   ├── test_array.c
+│   ├── test_error_recovery.c
+│   └── ... (other test files)
+└── web-gui/                      # Web-based interface
+    ├── app.py                    # Flask backend
+    ├── requirements.txt          # Python dependencies
+    ├── static/
+    │   ├── style.css
+    │   └── script.js
+    └── templates/
+        └── index.html
+
+```
+
+## Prerequisites
+
+### For Command Line Version
+- **GCC** or **Clang** compiler
+- **Flex** (lexical analyzer generator)
+- **Bison** (parser generator)
+- **Make** (build automation)
+- **MSYS2 UCRT64** (Windows environment with Unix tools)
+
+### For Web GUI Version
+- **Python 3.10+**
+- **Flask** and **Flask-CORS** (Python packages)
+
+## Installation & Setup
+
+### 1. Clone/Setup Project
+```bash
+cd ~/Desktop/CC/project
+```
+
+### 2. Build the Compiler (Command Line Version)
+
+#### Using MSYS2 UCRT64 Terminal:
+```bash
+cd ~/Desktop/CC/project/src
+# or use Windows path: cd /c/Users/ajade/Desktop/CC/project/src
+
+make clean      # Clean previous builds
+make            # Build the compiler
+```
+
+This generates `compiler.exe` in the src folder.
+
+### 3. Setup Python Environment (Web GUI)
+
+#### Activate Virtual Environment:
+```bash
+# PowerShell (Windows)
+.\.venv\Scripts\Activate.ps1
+
+# Bash (MSYS2)
+source .venv/Scripts/activate
+```
+
+#### Install Python Dependencies:
+```bash
+pip install flask flask-cors
+```
+
+## Usage
+
+### Command Line Version
+
+#### Compile and Run Code:
+```bash
+cd /c/Users/ajade/Desktop/CC/project/src
+
+# Compile a test file
+./compiler test_valid.c
+
+# Compile your own file
+./compiler yourfile.c
+```
+
+#### Example Output:
+```
+====== Parsing successful ======
+========== Symbol Table ==========
+...
+=== Program Output ===
+15
+```
+
+### Web GUI Version
+
+#### 1. Navigate to Web GUI Directory:
+```bash
+cd C:\Users\ajade\Desktop\CC\project\web-gui
+```
+
+#### 2. Activate Virtual Environment (if not already active):
+```bash
+.\.venv\Scripts\Activate.ps1
+```
+
+#### 3. Start Flask Server:
+```bash
+python app.py
+```
+
+#### 4. Open in Browser:
+Navigate to: **http://localhost:5000**
+
+#### 5. Using the GUI:
+- Paste C-like code in the editor
+- Click **"Compile & Run"** button
+- View output in the **Output** tab
+- View compilation errors in the **Errors** tab
+- Use **"Clear"** to clear the editor
+- Use **"Reset"** to load default example code
+
+## Compilation Process
+
+The compiler follows these stages:
+
+1. **Lexical Analysis** (Flex) → Tokenization
+2. **Syntax Analysis** (Bison) → Parsing
+3. **AST Construction** → Abstract Syntax Tree
+4. **Symbol Table Generation** → Variable/Function tracking
+5. **Three-Address Code Generation** → Intermediate code
+6. **Optimization** → Constant folding and improvements
+7. **Interpretation** → Direct execution
+
+## Testing
+
+### Run Test Cases:
+```bash
+cd /c/Users/ajade/Desktop/CC/project/src
+
+# Test basic compilation
+./compiler ../test_cases/test_valid.c
+
+# Test arrays
+./compiler ../test_cases/test_array.c
+
+# Test error recovery
+./compiler ../test_cases/test_error_recovery.c
+```
+
+## Troubleshooting
+
+### Issue: Compiler not found
+- **Solution**: Run `make` in the src folder to build the compiler
+
+### Issue: Flask server won't start
+- **Solution**: 
+  - Activate virtual environment: `.\.venv\Scripts\Activate.ps1`
+  - Install dependencies: `pip install flask flask-cors`
+  - Check Python path: `python --version`
+
+### Issue: "Import flask could not be resolved" in editor
+- **Solution**: 
+  - Reload VS Code (Ctrl+Shift+P → "Developer: Reload Window")
+  - Or switch Python interpreter to the venv
+
+### Issue: Compiler crashes on certain code
+- **Solution**: Check if code follows supported syntax. Review test cases for valid examples.
+
+## Building from Source
+
+### Clean Build:
+```bash
+cd /c/Users/ajade/Desktop/CC/project/src
+make clean
+make
+```
+
+### Rebuild Only Changed Files:
+```bash
+cd /c/Users/ajade/Desktop/CC/project/src
+make
+```
+
+## Environment Details
+
+- **C++ Standard**: C++11
+- **Compiler Flags**: `-Wall -g -std=c++11`
+- **Python Version**: 3.10+
+- **Flask Version**: 3.1.3
+- **Flask-CORS Version**: 6.0.2
+
+## File Locations
+
+- **Compiler Binary**: `C:\Users\ajade\Desktop\CC\project\src\compiler.exe`
+- **Web Server**: `http://localhost:5000`
+- **Flask App**: `C:\Users\ajade\Desktop\CC\project\web-gui\app.py`
+
+## Notes
+
+- Ensure `compiler.exe` exists in the src folder before running the web GUI
+- The web GUI runs on `http://127.0.0.1:5000` (localhost)
+- Use MSYS2 UCRT64 terminal for best compatibility on Windows
+- Flask server should display debug information in terminal during execution
+
+---
+
+**For questions or issues, refer to test cases in `test_cases/` folder for valid code examples.**
