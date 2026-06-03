@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C Mini Compiler - Web IDE</title>
+    <title>C Mini Compiler - Web IDE with AI</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>⚡ C Mini Compiler</h1>
-            <p>Write, Compile & Execute C-like code in your browser</p>
+            <h1>⚡ C Mini Compiler <span style="font-size: 0.8rem; background: linear-gradient(135deg, #00d4ff, #7b2cbf); padding: 4px 12px; border-radius: 20px;">with AI</span></h1>
+            <p>Write, Compile & Execute C-like code in your browser | AI-powered error fixing</p>
         </header>
 
         <div class="main-content">
@@ -21,6 +21,7 @@
                     <span class="panel-title">📝 Code Editor</span>
                     <div class="button-group">
                         <button id="compileBtn" class="btn btn-primary">▶ Compile & Run</button>
+                        <button id="aiFixBtn" class="btn btn-ai">✨ Fix with AI</button>
                         <button id="clearBtn" class="btn btn-secondary">🗑 Clear</button>
                         <button id="resetBtn" class="btn btn-secondary">⟳ Reset</button>
                     </div>
@@ -30,27 +31,37 @@
                 </div>
             </div>
 
-            <!-- Right Panel: Output -->
+            <!-- Right Panel: Output with Multiple Tabs -->
             <div class="panel output-panel">
                 <div class="panel-header">
                     <span class="panel-title">📤 Output</span>
                     <div class="tab-buttons">
                         <button id="outputTab" class="tab-btn active">Output</button>
+                        <button id="tacTab" class="tab-btn">TAC</button>
+                        <button id="astTab" class="tab-btn">AST</button>
+                        <button id="symTab" class="tab-btn">Symbol Table</button>
                         <button id="errorsTab" class="tab-btn">Errors</button>
                     </div>
                 </div>
                 <div class="output-container">
                     <pre id="outputArea" class="output-area"></pre>
+                    <pre id="tacArea" class="output-area" style="display: none;"></pre>
+                    <pre id="astArea" class="output-area" style="display: none;"></pre>
+                    <pre id="symArea" class="output-area" style="display: none;"></pre>
                     <pre id="errorsArea" class="output-area error-area" style="display: none;"></pre>
                 </div>
             </div>
         </div>
 
         <footer>
-            <p>Supports: int, float, bool, if-else, while, for, functions, arrays, input/output</p>
+            <p>Supports: int, float, bool, if-else, while, for, functions, arrays, input/output | 🤖 AI fixes syntax & semantic errors</p>
             <div class="loading" id="loading" style="display: none;">
                 <div class="spinner"></div>
                 <span>Compiling...</span>
+            </div>
+            <div class="loading" id="aiLoading" style="display: none;">
+                <div class="spinner"></div>
+                <span>AI is fixing your code...</span>
             </div>
         </footer>
     </div>

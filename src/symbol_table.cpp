@@ -87,6 +87,8 @@ void insert_symbol(SymbolTable *st, char *name, ASTNode *type) {
     sym->name = strdup(name);
     sym->type = type;
     sym->scope_level = st->current_scope;
+    sym->is_array = 0;
+    sym->array_size = 0;
     sym->next = st->buckets[idx];
     st->buckets[idx] = sym;
 }
